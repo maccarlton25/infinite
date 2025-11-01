@@ -10,8 +10,8 @@ export default function HomePage() {
       <section className="hero">
         <h1>Infinite Site</h1>
         <p>
-          Generate on-demand topic pages by visiting <code>/some-topic-slug</code>. Content is
-          streamed live on first visit and served from cache for 24 hours thereafter.
+          Generate on-demand topic pages by visiting <code>/some-topic-slug</code>. Content streams live
+          on first visit and is served instantly from cache thereafter until you regenerate.
         </p>
       </section>
       <TopicSearch />
