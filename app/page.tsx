@@ -1,8 +1,6 @@
 import Link from 'next/link';
-import { ResetCacheButton } from '../components/ResetCacheButton';
 import { TopicSearch } from '../components/TopicSearch';
 import { RecentTopics } from '../components/RecentTopics';
-import { CacheInspector } from '../components/CacheInspector';
 
 export default function HomePage() {
   return (
@@ -15,9 +13,26 @@ export default function HomePage() {
         </p>
       </section>
       <TopicSearch />
+      <section className="tech-overview">
+        <h2>Technical overview</h2>
+        <ul>
+          <li>
+            Next.js App Router with server actions streams OpenAI Responses
+            (JSON mode) directly to the browser via Server-Sent Events.
+          </li>
+          <li>
+            Each completion is sanitized with <code>marked</code> +
+            <code>dompurify</code> and cached in browser localStorage using a
+            512-entry LRU so repeat visits stay instant and work offline.
+          </li>
+          <li>
+            Interface is fully serverless: retry/regenerate controls, cache
+            viewer (<Link href="/cache">cache page</Link>), and topic history are
+            all client-side and sync via custom events.
+          </li>
+        </ul>
+      </section>
       <RecentTopics />
-      <CacheInspector />
-      {/* <ResetCacheButton /> */}
     </main>
   );
 }

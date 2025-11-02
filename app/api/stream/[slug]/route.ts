@@ -11,7 +11,6 @@ import {
   GenerationError
 } from '../../../../lib/generator';
 import { renderMarkdownPage } from '../../../../lib/render';
-import { setCachedPage } from '../../../../lib/cache';
 
 const encoder = new TextEncoder();
 const rateLimiter = new RateLimiterMemory({
@@ -106,20 +105,9 @@ export async function GET(
         const meta = await finalizeMarkdownStream(topic, openAIStream);
         const rendered = renderMarkdownPage(slug, markdown);
 
-        setCachedPage(slug, {
-          markdown,
-          html: rendered.html,
-          title: rendered.title,
-          description: rendered.description,
-          lastUpdated: rendered.lastUpdated,
-          tokens: meta.tokens,
-          at: Date.now()
-        });
-
         console.log(
           JSON.stringify({
             slug,
-            cacheHit: false,
             genLatencyMs: Date.now() - start,
             tokens: meta.tokens ?? null,
             fallback: false,

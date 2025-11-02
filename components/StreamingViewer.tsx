@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { marked } from 'marked';
+import {
+  getCachedEntry,
+  removeCachedEntry,
+  upsertCachedEntry,
+  type LocalCacheEntry,
+  MAX_CACHE_ENTRIES
+} from '../lib/localCache';
 
 interface Props {
   slug: string;
@@ -38,6 +45,8 @@ export function StreamingViewer({ slug, topic }: Props) {
   const [finalHtml, setFinalHtml] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [cachedEntry, setCachedEntry] = useState<LocalCacheEntry | null>(null);
+  const [mode, setMode] = useState<'loading' | 'cached' | 'streaming'>('loading');
   const statusRef = useRef<'idle' | 'streaming' | 'complete' | 'error'>('idle');
   const startTimeRef = useRef<number | null>(null);
 
@@ -47,13 +56,37 @@ export function StreamingViewer({ slug, topic }: Props) {
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const entry = getCachedEntry(slug);
+    if (entry) {
+      setCachedEntry(entry);
+      setMode('cached');
+      updateStatus('complete');
+      setPhase('Cached result');
+      setElapsedMs(0);
+      setError(null);
+      setCompleteMeta({
+        ok: true,
+        title: entry.title,
+        description: entry.description,
+        tokens: entry.tokens ?? null
+      });
+    } else {
+      setCachedEntry(null);
+      setMode('streaming');
+      setError(null);
+    }
+  }, [slug, reloadToken]);
+
+  useEffect(() => {
+    if (mode !== 'streaming') return;
+
     setMarkdown('');
+    setFinalHtml(null);
     updateStatus('streaming');
     setPhase('Connecting…');
     setElapsedMs(0);
-    setError(null);
     setCompleteMeta(null);
-    setFinalHtml(null);
     startTimeRef.current = Date.now();
 
     const source = new EventSource(
@@ -90,6 +123,20 @@ export function StreamingViewer({ slug, topic }: Props) {
           setFinalHtml(data.html);
         }
         setPhase('Complete');
+
+        const entry: LocalCacheEntry = {
+          slug,
+          html: data.html ?? '',
+          markdown: data.markdown ?? markdown,
+          title: data.title ?? headingFromTopic(topic),
+          description: data.description ?? '',
+          lastUpdated: new Date().toISOString(),
+          tokens: data.tokens ?? null
+        };
+        upsertCachedEntry(entry);
+        setCachedEntry(entry);
+        setMode('cached');
+        persistRecentTopic(slug, entry.title);
       } catch {
         // ignore parse issue
       } finally {
@@ -135,7 +182,7 @@ export function StreamingViewer({ slug, topic }: Props) {
       source.close();
       startTimeRef.current = null;
     };
-  }, [slug, reloadToken]);
+  }, [slug, reloadToken, mode]);
 
   useEffect(() => {
     if (statusRef.current === 'streaming') {
@@ -158,28 +205,13 @@ export function StreamingViewer({ slug, topic }: Props) {
     }
   }, [slug, completeMeta, topic]);
 
-  const handleRetry = async () => {
+  const handleRetry = () => {
     setIsRetrying(true);
-    try {
-      const res = await fetch(`/api/cache/${encodeURIComponent(slug)}`, {
-        method: 'DELETE'
-      });
-      if (!res.ok) {
-        throw new Error(`Failed to reset cache (status ${res.status})`);
-      }
-      setError(null);
-    } catch (err) {
-      console.warn('Failed to clear cache before retry', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Retry failed to reset the cache entry.'
-      );
-      return;
-    } finally {
-      setIsRetrying(false);
-    }
+    removeCachedEntry(slug);
+    setCachedEntry(null);
+    setMode('streaming');
     setReloadToken((token) => token + 1);
+    setTimeout(() => setIsRetrying(false), 200);
   };
 
   const sanitizedHtml = useMemo(() => sanitizeMarkdown(markdown), [markdown]);
@@ -187,12 +219,28 @@ export function StreamingViewer({ slug, topic }: Props) {
   const disclaimer =
     'This page was generated automatically and may contain inaccuracies.';
 
-  if (finalHtml) {
+  if (mode === 'cached' && cachedEntry) {
     return (
-      <div
-        dangerouslySetInnerHTML={{ __html: finalHtml }}
-        suppressHydrationWarning
-      />
+      <div className="cached-page-container">
+        <div className="cached-page-toolbar">
+          <div className="cached-page-meta">
+            <span>Cached · {formatTimestamp(cachedEntry.lastUpdated)}</span>
+            {cachedEntry.tokens != null && <span>Tokens: {cachedEntry.tokens}</span>}
+          </div>
+          <button
+            type="button"
+            className="cached-page-button"
+            onClick={handleRetry}
+            disabled={isRetrying}
+          >
+            {isRetrying ? 'Regenerating…' : 'Regenerate'}
+          </button>
+        </div>
+        <div
+          dangerouslySetInnerHTML={{ __html: cachedEntry.html }}
+          suppressHydrationWarning
+        />
+      </div>
     );
   }
 
@@ -303,9 +351,26 @@ function persistRecentTopic(slug: string, title: string) {
     const entry = { slug, title, seenAt: Date.now() };
     const filtered = list.filter((item: { slug: string }) => item?.slug !== slug);
     filtered.unshift(entry);
-    localStorage.setItem(key, JSON.stringify(filtered.slice(0, 20)));
+    localStorage.setItem(
+      key,
+      JSON.stringify(filtered.slice(0, MAX_CACHE_ENTRIES))
+    );
     window.dispatchEvent(new Event('recent-topics:update'));
   } catch (error) {
     console.warn('Failed to persist recent topic', error);
+  }
+}
+
+function formatTimestamp(value: string) {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
+  } catch {
+    return value;
   }
 }

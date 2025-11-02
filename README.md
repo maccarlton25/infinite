@@ -11,13 +11,13 @@ Next.js (App Router) project that auto-generates simple, sanitized HTML pages fo
 - Content generation via OpenAI (`openai` npm, model `gpt-4o-mini`) using Responses streaming.
 - Markdown parsing with `marked`; sanitization with `dompurify` + `jsdom`.
 - Client-side streaming view powered by `EventSource`.
-- Caching through `lru-cache` (max 512 entries, indefinite TTL); rate limiting via `rate-limiter-flexible`.
+- Browser-based LRU caching (localStorage, max 512 entries) keeps regenerated pages instant; server rate limiting via `rate-limiter-flexible`.
 - UX helpers for live cache insights.
 
 Install core dependencies:
 
 ```bash
-npm i next react react-dom typescript openai marked dompurify jsdom zod lru-cache rate-limiter-flexible
+npm i next react react-dom typescript openai marked dompurify jsdom zod rate-limiter-flexible
 ```
 
 ## Environment
@@ -37,11 +37,11 @@ npm i next react react-dom typescript openai marked dompurify jsdom zod lru-cach
 
 ## Rendering Pipeline
 1. Normalize and validate slug to topic string.
-2. Check the in-memory LRU cache; hit returns stored HTML instantly.
+2. Check the browser LRU cache; hit returns stored HTML instantly.
 3. On miss, render a client-side streaming view that opens an SSE connection to `/api/stream/[slug]`.
 4. The API route streams Markdown deltas from OpenAI in real time, relaying each chunk to the client and accumulating the full document server-side.
-5. Once the stream completes, sanitize the Markdown via `marked` + `dompurify`, wrap it in the shared HTML template, cache the HTML/metadata (indefinite TTL, max 512 entries), and close the SSE stream.
-6. Subsequent requests reuse the cached HTML; the reset button or per-page regenerate action clears the cache entry on demand.
+5. Once the stream completes, sanitize the Markdown via `marked` + `dompurify`, wrap it in the shared HTML template, and persist the HTML/metadata in the browser LRU cache (max 512 entries).
+6. Subsequent requests reuse the cached HTML; the reset button or per-page regenerate action clears the browser entry on demand.
 
 ## Error Handling & Observability
 - Invalid slug → friendly error page rendered via Markdown template.
@@ -54,14 +54,15 @@ npm i next react react-dom typescript openai marked dompurify jsdom zod lru-cach
 - `app/api/stream/[slug]/route.ts` – SSE endpoint that streams OpenAI Markdown and caches the final page.
 - `lib/generator.ts` – OpenAI client + streaming helpers.
 - `lib/render.ts` – Markdown → sanitized HTML template.
-- `lib/cache.ts` – LRU instance & TTL configuration.
+- `lib/localCache.ts` – browser LRU helpers (load, upsert, clear) shared across components.
 - `lib/slug.ts` – normalization & validation helpers.
 - `components/TopicSearch.tsx` – client search bar on the home page that normalizes topics and routes to the matching slug.
 - `components/RecentTopics.tsx` – shows the latest generated slugs (synced to `localStorage`).
-- `components/CacheInspector.tsx` – polls `/api/cache` to display cache fill state and latest cached entries.
-- `components/NavBar.tsx` – sticky navigation with a compact search form that routes to any slug.
-- `components/CachedPageView.tsx` – renders cached topics with metadata and a regenerate button.
-- `components/ResetCacheButton.tsx` – clears the LRU cache via `/api/reset-cache`.
+- `components/CacheInspector.tsx` – reads the browser cache to display fill state and latest cached entries.
+- `components/NavBar.tsx` – sticky navigation with compact search and cache link.
+- `components/NavSearch.tsx` – compact nav search form.
+- `components/ResetCacheButton.tsx` – clears the browser cache (localStorage).
+- `app/cache/page.tsx` – cache dashboard explaining architecture with inspector and reset.
 - `public/favicon.ico` – site icon served as the default Next.js favicon.
 
 ## Local Development
@@ -73,7 +74,7 @@ npm run build && npm start
 
 ## Acceptance Criteria
 - Visiting `/the-titanic` yields a compact, styled HTML article with varied sections (lists/tables) and the disclaimer.
-- Second request hits cache (visible via logs, cache inspector, and page metadata).
+- Second request hits the browser cache (visible via the cache page, inspector widget, and page metadata).
 - Recent topics list and cache inspector update automatically after generation.
 - Regenerate button on cached pages clears the entry and streams a fresh version that becomes the new cached copy.
 - Invalid slugs respond with friendly error.

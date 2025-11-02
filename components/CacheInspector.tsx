@@ -1,30 +1,32 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { loadCache, MAX_CACHE_ENTRIES } from '../lib/localCache';
 
-type CacheStatsResponse = {
+type CacheStats = {
   size: number;
-  max: number;
   entries: { slug: string; title: string; lastUpdated: string }[];
-  updatedAt: string;
 };
 
 export function CacheInspector() {
-  const [data, setData] = useState<CacheStatsResponse | null>(null);
+  const [data, setData] = useState<CacheStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const loadStats = useCallback(async () => {
+  const loadStats = useCallback(() => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/cache');
-      if (!res.ok) {
-        throw new Error(`Failed to load cache stats (${res.status})`);
-      }
-      const json = (await res.json()) as CacheStatsResponse;
-      setData(json);
+      const cache = loadCache();
+      setData({
+        size: cache.length,
+        entries: cache.map(({ slug, title, lastUpdated }) => ({
+          slug,
+          title,
+          lastUpdated
+        }))
+      });
       setError(null);
       setLastRefresh(Date.now());
     } catch (err) {
@@ -37,24 +39,26 @@ export function CacheInspector() {
   }, []);
 
   useEffect(() => {
-    void loadStats();
+    loadStats();
     intervalRef.current = setInterval(() => {
-      void loadStats();
+      loadStats();
     }, 15_000);
+
+    const handleUpdate = () => loadStats();
+    window.addEventListener('cache:update', handleUpdate);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      window.removeEventListener('cache:update', handleUpdate);
     };
   }, [loadStats]);
 
-  const entries =
-    data?.entries?.map(
-      (entry: CacheStatsResponse['entries'][number]) => entry
-    ) ?? [];
   const usagePercent =
-    data && data.max > 0 ? Math.min(100, Math.round((data.size / data.max) * 100)) : 0;
+    data && MAX_CACHE_ENTRIES > 0
+      ? Math.min(100, Math.round((data.size / MAX_CACHE_ENTRIES) * 100))
+      : 0;
 
   const formatter = useMemo(
     () =>
@@ -72,7 +76,7 @@ export function CacheInspector() {
     <section className="cache-inspector">
       <div className="cache-inspector__header">
         <h2>Cache status</h2>
-        <button type="button" onClick={() => void loadStats()} disabled={isLoading}>
+        <button type="button" onClick={loadStats} disabled={isLoading}>
           {isLoading ? 'Refreshing…' : 'Refresh'}
         </button>
       </div>
@@ -80,7 +84,7 @@ export function CacheInspector() {
       {data ? (
         <div className="cache-inspector__content">
           <p>
-            <strong>{data.size}</strong> of {data.max} slots used
+            <strong>{data.size}</strong> of {MAX_CACHE_ENTRIES} slots used
             {lastRefresh && (
               <span className="muted">
                 {' '}
@@ -94,9 +98,9 @@ export function CacheInspector() {
               style={{ width: `${usagePercent}%` }}
             />
           </div>
-          {entries.length ? (
+          {data.entries.length ? (
             <ul className="cache-inspector__list">
-              {entries.map((entry) => (
+              {data.entries.map((entry) => (
                 <li key={entry.slug}>
                   <span>{entry.title || entry.slug.replace(/-/g, ' ')}</span>
                   <span className="meta">{entry.slug}</span>

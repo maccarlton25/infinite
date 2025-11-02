@@ -1,29 +1,20 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { clearCache, loadCache, MAX_CACHE_ENTRIES } from '../lib/localCache';
 
 export function ResetCacheButton() {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleReset = () => {
-    startTransition(async () => {
+    startTransition(() => {
       setMessage(null);
 
       try {
-        const response = await fetch('/api/reset-cache', {
-          method: 'POST'
-        });
-
-        if (!response.ok) {
-          throw new Error(`Reset failed with status ${response.status}`);
-        }
-
-        const result = await response.json();
-        setMessage(
-          `Cache cleared. Current size: ${result.cache?.size ?? 0}/${result
-            .cache?.max ?? 0}`
-        );
+        clearCache();
+        const remaining = loadCache().length;
+        setMessage(`Cache cleared. Current size: ${remaining}/${MAX_CACHE_ENTRIES}`);
       } catch (error) {
         setMessage(
           error instanceof Error

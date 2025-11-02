@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { getCachedPage } from '../../lib/cache';
 import {
   assertValidSlug,
   InvalidSlugError,
@@ -7,7 +6,6 @@ import {
 } from '../../lib/slug';
 import { renderMarkdownPage } from '../../lib/render';
 import { StreamingViewer } from '../../components/StreamingViewer';
-import { CachedPageView } from '../../components/CachedPageView';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,32 +20,6 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   try {
     const slug = assertValidSlug(params.slug);
-    const cached = getCachedPage(slug);
-    if (cached) {
-      const topicUrlBase =
-        process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '') ??
-        'https://infinite-site.local';
-      const canonicalUrl = `${topicUrlBase}/${slug}`;
-
-      return {
-        title: cached.title,
-        description: cached.description,
-        robots: {
-          index: false,
-          follow: false
-        },
-        openGraph: {
-          title: cached.title,
-          description: cached.description,
-          url: canonicalUrl,
-          type: 'article'
-        },
-        alternates: {
-          canonical: canonicalUrl
-        }
-      };
-    }
-
     const topic = topicFromSlug(slug);
     const title = `Generating ${topic}`;
 
@@ -84,32 +56,10 @@ export async function generateMetadata({
 export default async function TopicPage({ params }: PageProps) {
   try {
     const slug = assertValidSlug(params.slug);
-    const cached = getCachedPage(slug);
     const topic = topicFromSlug(slug);
-
-    if (cached) {
-      logRequest({
-        slug,
-        cacheHit: true,
-        genLatencyMs: 0,
-        tokens: cached.tokens ?? null
-      });
-
-      return (
-        <CachedPageView
-          slug={slug}
-          html={cached.html}
-          lastUpdated={cached.lastUpdated}
-          tokens={cached.tokens ?? null}
-        />
-      );
-    }
 
     logRequest({
       slug,
-      cacheHit: false,
-      genLatencyMs: 0,
-      tokens: null,
       streamed: true
     });
 
@@ -136,19 +86,10 @@ export default async function TopicPage({ params }: PageProps) {
   }
 }
 
-function logRequest(entry: {
-  slug: string;
-  cacheHit: boolean;
-  genLatencyMs: number;
-  tokens: number | null;
-  streamed?: boolean;
-}) {
+function logRequest(entry: { slug: string; streamed?: boolean }) {
   console.log(
     JSON.stringify({
       slug: entry.slug,
-      cacheHit: entry.cacheHit,
-      genLatencyMs: entry.genLatencyMs,
-      tokens: entry.tokens,
       streamed: entry.streamed ?? false,
       at: new Date().toISOString()
     })

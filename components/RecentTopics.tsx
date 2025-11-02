@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { MAX_CACHE_ENTRIES } from '../lib/localCache';
 
 const STORAGE_KEY = 'recentTopics';
-const MAX_TOPICS = 20;
+const MAX_TOPICS = MAX_CACHE_ENTRIES;
 
 type TopicEntry = {
   slug: string;

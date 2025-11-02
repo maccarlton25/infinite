@@ -16,16 +16,20 @@ const markdownSystemPrompt = [
   '- Timeline or chronology tables/lists for historical topics.',
   'Always include at least one list OR table somewhere beyond the intro.',
   'Use callouts like block quotes or bold subheadings sparingly to add visual variety.',
+  'Only include quotations if they are well-known, fully attributed, and you are confident they are accurate; otherwise omit them.',
   'If the topic relates to technology, code, or data, include a short fenced code block or pseudo-code when helpful.',
   'If the topic is a place, event, or person, add a "Key Facts" list or table.',
   'Conclude with a short section titled "Further Context" or "Looking Ahead" if it fits the topic.',
   `End the entire document with a standalone paragraph containing exactly: "${DEFAULT_DISCLAIMER}".`,
   'Markdown only. No raw HTML, no image embeds.',
-  'Prefer the most common interpretation when ambiguity exists.'
+  'Prefer the most common interpretation when ambiguity exists.',
+  'Do not invent statistics, dates, or quotes—stick to broadly accepted, verifiable information.'
 ].join(' ');
 
 const markdownUserPrompt = (topic: string) =>
-  `Generate a rich Markdown article about "${topic}". Tailor the structure to the subject (history, science, product, concept, etc.) while following the system guidelines.`;
+  `Generate a rich Markdown article about "${topic}". Tailor the structure to the subject (history, science, product, concept, etc.) while following the system guidelines.
+
+Before you begin, ensure the topic fits a general-knowledge reference page. If it appears unrelated, promotional, or unsafe, respond with:"I can only generate neutral reference pages for broad topics."`;
 
 export class GenerationError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
