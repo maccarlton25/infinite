@@ -80,50 +80,55 @@ export function renderMarkdownPage(
     <div class="page">
       <style>
         :root {
-          color-scheme: dark;
+          color-scheme: light;
         }
         .page {
           min-height: 100vh;
-          background: radial-gradient(circle at top, #1f2937, #020617);
-          color: #f8fafc;
-          padding: 48px 14px 72px;
-          font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          background: transparent;
+          color: #2d2614;
+          padding: 12px 0 32px;
+          font-family: 'Iowan Old Style', 'Merriweather', 'Georgia', serif;
+          letter-spacing: 0.01em;
         }
         .wrap {
           max-width: 860px;
           margin: 0 auto;
-          background: rgba(15, 23, 42, 0.78);
-          border: 1px solid rgba(148, 163, 184, 0.18);
-          border-radius: 16px;
-          box-shadow: 0 18px 40px rgba(2, 6, 23, 0.55);
-          backdrop-filter: blur(12px);
-          padding: clamp(24px, 5vw, 40px);
+          background: #f8f1e2;
+          border: 1px solid #d8c7a4;
+          border-radius: 18px;
+          box-shadow: 0 18px 48px rgba(74, 51, 23, 0.16);
+          padding: clamp(28px, 5vw, 48px);
+        }
+        .content {
+          line-height: 1.7;
         }
         .content > * + * {
-          margin-top: 16px;
+          margin-top: 18px;
         }
         .content h1:first-of-type {
-          font-size: clamp(1.9rem, 3.6vw, 2.65rem);
-          margin-bottom: 12px;
-          letter-spacing: -0.025em;
+          font-size: clamp(2rem, 3.4vw, 2.85rem);
+          margin: 0 0 12px;
+          letter-spacing: 0.04em;
+          text-transform: capitalize;
         }
         .content p {
-          line-height: 1.6;
+          line-height: 1.7;
           margin: 0;
         }
         .content h2 {
-          margin-top: 24px;
-          margin-bottom: 8px;
-          font-size: 1.4rem;
+          margin: 26px 0 8px;
+          font-size: 1.35rem;
+          border-bottom: 1px solid #d8c7a4;
+          padding-bottom: 6px;
         }
         .content h3 {
-          margin-top: 18px;
+          margin-top: 20px;
           margin-bottom: 6px;
           font-size: 1.15rem;
         }
         .content ul,
         .content ol {
-          margin: 0 0 0 20px;
+          margin: 0 0 0 24px;
           padding: 0;
         }
         .content li {
@@ -136,47 +141,56 @@ export function renderMarkdownPage(
         }
         .content table th,
         .content table td {
-          border: 1px solid rgba(148, 163, 184, 0.25);
+          border: 1px solid #d8c7a4;
           padding: 8px 12px;
           text-align: left;
         }
+        .content table th {
+          background: #efe2c3;
+        }
         .content blockquote {
-          margin: 14px 0;
-          padding: 8px 16px;
-          border-left: 3px solid rgba(59, 130, 246, 0.6);
-          color: #cbd5f5;
-          background: rgba(30, 41, 59, 0.4);
+          margin: 16px 0;
+          padding: 12px 18px;
+          border-left: 4px solid #c09543;
+          background: rgba(192, 149, 67, 0.12);
+          color: #5c4d2d;
         }
         .content pre {
-          background: rgba(15, 23, 42, 0.65);
-          padding: 12px 16px;
-          border-radius: 10px;
+          background: #efe2c3;
+          padding: 14px 18px;
+          border-radius: 12px;
+          border: 1px solid #d8c7a4;
           overflow-x: auto;
-          font-size: 0.9rem;
+          font-size: 0.92rem;
         }
         .content code {
-          font-family: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          font-family: 'Berkeley Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          background: rgba(239, 226, 195, 0.9);
+          border: 1px solid rgba(216, 199, 164, 0.8);
+          border-radius: 4px;
+          padding: 0 4px;
         }
         footer {
-          margin-top: 28px;
-          font-size: 0.82rem;
-          color: #94a3b8;
+          margin-top: 32px;
+          font-size: 0.85rem;
+          color: #5c4d2d;
           display: flex;
           flex-direction: column;
           gap: 10px;
         }
         footer .meta {
-          font-size: 0.78rem;
+          font-size: 0.8rem;
         }
         a {
-          color: #38bdf8;
+          color: #8b6b32;
+          text-decoration: underline;
         }
         @media (max-width: 640px) {
           .wrap {
             padding: 24px 18px;
           }
           .content h2 {
-            font-size: 1.25rem;
+            font-size: 1.22rem;
           }
         }
       </style>

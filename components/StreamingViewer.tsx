@@ -306,16 +306,7 @@ export function StreamingViewer({ slug, topic }: Props) {
                 type="button"
                 onClick={handleRetry}
                 disabled={isRetrying}
-                style={{
-                  marginLeft: '8px',
-                  background: 'transparent',
-                  border: '1px solid rgba(248, 113, 113, 0.4)',
-                  color: '#f87171',
-                  borderRadius: '999px',
-                  padding: '4px 12px',
-                  fontSize: '0.75rem',
-                  cursor: isRetrying ? 'wait' : 'pointer'
-                }}
+                className="retry-pill"
               >
                 {isRetrying ? 'Retrying…' : 'Retry'}
               </button>

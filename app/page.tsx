@@ -7,13 +7,18 @@ export default function HomePage() {
     <main className="home-page">
       <section className="hero">
         <h1>Infinite Site</h1>
+        <p>Type any URL slug (i.e. https://infinite-three-gray.vercel.app/what-is-quantum) and watch a 
+          wiki-style page automatically get generated.</p>
         <p>
-          Generate on-demand topic pages by visiting <code>/some-topic-slug</code>. Content streams live
-          on first visit and is served instantly from cache thereafter until you regenerate.
+          This site builds pages by streaming LLM responses (in Markdown). I use custom rendering 
+          scripts to derive, sanitize, and render pages in real time.
+        </p>
+        <p>
+          I also implemented a localStorage LRU cache. Mostly for fun and to help with testing. 
         </p>
       </section>
       <TopicSearch />
-      <section className="tech-overview">
+      {/* <section className="tech-overview">
         <h2>Technical overview</h2>
         <ul>
           <li>
@@ -31,7 +36,7 @@ export default function HomePage() {
             all client-side and sync via custom events.
           </li>
         </ul>
-      </section>
+      </section> */}
       <RecentTopics />
     </main>
   );
