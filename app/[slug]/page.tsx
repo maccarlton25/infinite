@@ -10,16 +10,17 @@ import { StreamingViewer } from '../../components/StreamingViewer';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({
   params
 }: PageProps): Promise<Metadata> {
+  const { slug: rawSlug } = await params;
   try {
-    const slug = assertValidSlug(params.slug);
+    const slug = assertValidSlug(rawSlug);
     const topic = topicFromSlug(slug);
     const title = `Generating ${topic}`;
 
@@ -54,19 +55,15 @@ export async function generateMetadata({
 }
 
 export default async function TopicPage({ params }: PageProps) {
+  const { slug: rawSlug } = await params;
+  let slug: string;
+  let topic: string;
   try {
-    const slug = assertValidSlug(params.slug);
-    const topic = topicFromSlug(slug);
-
-    logRequest({
-      slug,
-      streamed: true
-    });
-
-    return <StreamingViewer slug={slug} topic={topic} />;
+    slug = assertValidSlug(rawSlug);
+    topic = topicFromSlug(slug);
   } catch (error) {
     if (error instanceof InvalidSlugError) {
-      const html = buildInvalidSlugHtml(params.slug);
+      const html = buildInvalidSlugHtml(rawSlug);
       return (
         <div
           dangerouslySetInnerHTML={{ __html: html }}
@@ -76,7 +73,7 @@ export default async function TopicPage({ params }: PageProps) {
     }
 
     console.error('Unexpected topic page failure', error);
-    const html = buildFallbackHtml(params.slug);
+    const html = buildFallbackHtml(rawSlug);
     return (
       <div
         dangerouslySetInnerHTML={{ __html: html }}
@@ -84,6 +81,13 @@ export default async function TopicPage({ params }: PageProps) {
       />
     );
   }
+
+  logRequest({
+    slug,
+    streamed: true
+  });
+
+  return <StreamingViewer slug={slug} topic={topic} />;
 }
 
 function logRequest(entry: { slug: string; streamed?: boolean }) {

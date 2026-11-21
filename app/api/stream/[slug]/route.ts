@@ -20,11 +20,12 @@ const rateLimiter = new RateLimiterMemory({
 
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug: rawSlug } = await params;
   let slug: string;
   try {
-    slug = assertValidSlug(params.slug);
+    slug = assertValidSlug(rawSlug);
   } catch (error) {
     if (error instanceof InvalidSlugError) {
       return NextResponse.json(

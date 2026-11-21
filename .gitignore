@@ -20,7 +20,7 @@ build
 .env
 .env.*
 !.env.example
-.tsbuildinfo
+*.tsbuildinfo
 
 # local scripts
 scripts/tmp/
